@@ -181,19 +181,20 @@ st.markdown(
     .pres-board h3 {
         color: #e8e042 !important;
         font-weight: 800 !important;
-        margin-top: 0.6rem;
-        margin-bottom: 0.2rem;
+        margin-top: 0.25rem;
+        margin-bottom: 0.1rem;
         font-size: 1.25rem;
     }
     .pres-board ul {
-        margin-top: 0.1rem;
-        margin-bottom: 0.4rem;
+        margin-top: 0.05rem;
+        margin-bottom: 0.1rem;
         padding-left: 1.4rem;
     }
     .pres-board li {
         color: #f5f5f0 !important;
         font-size: 1.05rem;
-        margin-bottom: 0.15rem;
+        margin-bottom: 0.05rem;
+        line-height: 1.3;
     }
     .pres-shield-wrap {
         text-align: center;
