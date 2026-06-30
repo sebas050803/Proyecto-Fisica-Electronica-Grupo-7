@@ -101,7 +101,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("🔌 Proyecto final de Física Electrónica")
+st.title("Proyecto final de Física Electrónica")
 st.caption("Modelo de referencia: Transistor 2N3904 · Segunda aproximación (Vbe = 0.7 V)")
 
 BETA_NOTE = (
@@ -465,9 +465,10 @@ with tab_a:
         rb_a = st.number_input("Rb (Ω)", min_value=1.0, value=1_000_000.0, step=1000.0, key="rb_a")
         rc_a = st.number_input("Rc (Ω)", min_value=1.0, value=1000.0, step=10.0, key="rc_a")
 
-        st.markdown('<div class="circuit-frame">', unsafe_allow_html=True)
-        st.markdown(svg_base_fija(vcc_a, rb_a, rc_a), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="circuit-frame">{svg_base_fija(vcc_a, rb_a, rc_a)}</div>',
+            unsafe_allow_html=True,
+        )
         st.markdown(f'<div class="beta-note">{BETA_NOTE}</div>', unsafe_allow_html=True)
 
     res_a = calc_base_fija(vcc_a, rb_a, rc_a)
@@ -495,9 +496,10 @@ with tab_b:
         rc_b = st.number_input("Rc (Ω)", min_value=1.0, value=5_000.0, step=100.0, key="rc_b")
         re_b = st.number_input("Re (Ω)", min_value=1.0, value=10_000.0, step=100.0, key="re_b")
 
-        st.markdown('<div class="circuit-frame">', unsafe_allow_html=True)
-        st.markdown(svg_emisor(vcc_b, vee_b, rb_b, rc_b, re_b), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="circuit-frame">{svg_emisor(vcc_b, vee_b, rb_b, rc_b, re_b)}</div>',
+            unsafe_allow_html=True,
+        )
         st.markdown(f'<div class="beta-note">{BETA_NOTE}</div>', unsafe_allow_html=True)
 
     res_b = calc_emisor(vcc_b, vee_b, rb_b, rc_b, re_b)
@@ -524,9 +526,10 @@ with tab_c:
         rc_c = st.number_input("Rc (Ω)", min_value=1.0, value=1_000.0, step=10.0, key="rc_c")
         re_c = st.number_input("Re (Ω)", min_value=1.0, value=500.0, step=10.0, key="re_c")
 
-        st.markdown('<div class="circuit-frame">', unsafe_allow_html=True)
-        st.markdown(svg_divisor(vcc_c, r1_c, r2_c, rc_c, re_c), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="circuit-frame">{svg_divisor(vcc_c, r1_c, r2_c, rc_c, re_c)}</div>',
+            unsafe_allow_html=True,
+        )
         st.markdown(f'<div class="beta-note">{BETA_NOTE}</div>', unsafe_allow_html=True)
 
     res_c = calc_divisor(vcc_c, r1_c, r2_c, rc_c, re_c)
