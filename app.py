@@ -285,13 +285,47 @@ def render_alert(estado, vcc_total):
         )
 
 
-def render_load_line(vce, ic, vce_max, ic_sat):
+def render_load_line(vce, ic, ib, vce_max, ic_sat):
+    """
+    Dibuja la familia de Curvas Características del Colector (Ic vs Vce para
+    distintos valores de Ib), la Recta de Carga DC y el Punto Q de operación.
+    """
     fig = go.Figure()
+
+    # --- Familia de curvas características (para varios múltiplos de Ib) ---
+    # Cada curva: en la zona de saturación sube abruptamente hasta Ic = beta*Ib,
+    # luego se mantiene "plana" (modelo ideal) en la región activa.
+    ib_actual = max(ib, vce_max / 1e9)  # evita división por cero si ib=0
+    ib_multipliers = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
+    vce_knee = vce_max * 0.04  # rodilla de saturación aproximada
+
+    for m in ib_multipliers:
+        ib_curve = ib_actual * m
+        ic_flat = min(BETA * ib_curve, ic_sat)
+        is_active_curve = abs(m - 1.0) < 1e-6
+        x_vals = [0, vce_knee, vce_max]
+        y_vals = [0, ic_flat * 1000, ic_flat * 1000]
+        fig.add_trace(go.Scatter(
+            x=x_vals, y=y_vals,
+            mode="lines",
+            name=f"Ib = {ib_curve*1e6:.1f} µA" if is_active_curve else None,
+            line=dict(
+                color="#3fb950" if is_active_curve else "#2c3a4a",
+                width=3 if is_active_curve else 1.5,
+                dash="solid" if is_active_curve else "dot",
+            ),
+            showlegend=is_active_curve,
+            hoverinfo="skip" if not is_active_curve else "all",
+        ))
+
+    # --- Recta de Carga DC ---
     fig.add_trace(go.Scatter(
         x=[0, vce_max], y=[ic_sat * 1000, 0],
         mode="lines", name="Recta de Carga (DC)",
         line=dict(color="#58a6ff", width=3),
     ))
+
+    # --- Punto Q ---
     fig.add_trace(go.Scatter(
         x=[vce], y=[ic * 1000],
         mode="markers+text", name="Punto Q",
@@ -300,16 +334,18 @@ def render_load_line(vce, ic, vce_max, ic_sat):
         textposition="top center",
         textfont=dict(color="#ff9a96"),
     ))
+
     fig.update_layout(
         template="plotly_dark",
+        title=dict(text="Curvas Características del Colector", font=dict(size=14, color="#c9d1d9")),
         xaxis_title="Vce (V)",
         yaxis_title="Ic (mA)",
         xaxis=dict(range=[0, vce_max * 1.05], gridcolor="#30363d"),
-        yaxis=dict(range=[0, ic_sat * 1000 * 1.1], gridcolor="#30363d"),
+        yaxis=dict(range=[0, ic_sat * 1000 * 1.15], gridcolor="#30363d"),
         plot_bgcolor="#0e1117",
         paper_bgcolor="#0e1117",
-        margin=dict(l=10, r=10, t=30, b=10),
-        height=380,
+        margin=dict(l=10, r=10, t=40, b=10),
+        height=420,
         legend=dict(orientation="h", y=-0.2),
     )
     st.plotly_chart(fig, use_container_width=True)
@@ -357,7 +393,7 @@ with tab_a:
 
     with col_diag:
         render_results(res_a, vcc_a)
-        render_load_line(res_a["vce"], res_a["ic"], vcc_a, res_a["ic_sat"])
+        render_load_line(res_a["vce"], res_a["ic"], res_a["ib"], vcc_a, res_a["ic_sat"])
         render_alert(res_a["estado"], vcc_a)
 
 # ============================ OPCIÓN B ======================================
@@ -387,7 +423,7 @@ with tab_b:
 
     with col_diag:
         render_results(res_b, vcc_b + vee_b)
-        render_load_line(res_b["vce"], res_b["ic"], vcc_b + vee_b, res_b["ic_sat"])
+        render_load_line(res_b["vce"], res_b["ic"], res_b["ib"], vcc_b + vee_b, res_b["ic_sat"])
         render_alert(res_b["estado"], vcc_b + vee_b)
 
 # ============================ OPCIÓN C ======================================
@@ -417,7 +453,7 @@ with tab_c:
     with col_diag:
         render_results(res_c, vcc_c)
         st.caption(f"Vth = {res_c['vth']:.3f} V  |  Rth = {res_c['rth']:.1f} Ω (método de Thévenin)")
-        render_load_line(res_c["vce"], res_c["ic"], vcc_c, res_c["ic_sat"])
+        render_load_line(res_c["vce"], res_c["ic"], res_c["ib"], vcc_c, res_c["ic_sat"])
         render_alert(res_c["estado"], vcc_c)
 
 st.divider()
