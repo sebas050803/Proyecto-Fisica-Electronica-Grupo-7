@@ -462,6 +462,101 @@ def calc_divisor(vcc, r1, r2, rc, re):
 
 
 # ----------------------------------------------------------------------------
+# CORRECCIÓN AUTOMÁTICA DE FALLAS (regla práctica: fijar Vce ≈ Vcc_total / 2)
+# ----------------------------------------------------------------------------
+# Cuando el punto Q cae en corte o saturación, se recalcula UNA resistencia del
+# circuito (manteniendo las demás fijas) para devolver el transistor a la
+# Región Activa, centrando el punto Q en la recta de carga (Vce ≈ Vcc/2),
+# igual que el criterio mostrado en la imagen de referencia del simulador.
+
+def correct_base_fija(vcc, rb, rc, res):
+    if res["estado"] == "activa":
+        return None
+    target_vce = vcc / 2
+    if res["estado"] == "saturacion":
+        ib = res["ib"]
+        ic_ideal = BETA * ib
+        if ic_ideal <= 0:
+            return None
+        rc_corr = target_vce / ic_ideal
+        rb_corr = rb
+        param_name, param_old, param_new = "Rc", rc, rc_corr
+    else:  # corte
+        if vcc - VBE <= 0:
+            return None
+        ic_target = target_vce / rc
+        ib_target = ic_target / BETA
+        if ib_target <= 0:
+            return None
+        rb_corr = (vcc - VBE) / ib_target
+        rc_corr = rc
+        param_name, param_old, param_new = "Rb", rb, rb_corr
+    res_corr = calc_base_fija(vcc, rb_corr, rc_corr)
+    return dict(param_name=param_name, param_old=param_old, param_new=param_new, res=res_corr)
+
+
+def correct_emisor(vcc, vee, rb, rc, re, res):
+    if res["estado"] == "activa":
+        return None
+    vcc_total = vcc + vee
+    target_vce = vcc_total / 2
+    if res["estado"] == "saturacion":
+        ie_ideal = (vee - VBE) / (re + rb / BETA)
+        if ie_ideal <= 0:
+            return None
+        rc_corr = target_vce / ie_ideal - re
+        if rc_corr <= 0:
+            return None
+        param_name, param_old, param_new = "Rc", rc, rc_corr
+        res_corr = calc_emisor(vcc, vee, rb, rc_corr, re)
+    else:  # corte (Vee insuficiente o Rb/Re demasiado grandes)
+        if vee - VBE <= 0:
+            return None
+        ic_target = target_vce / (rc + re)
+        rb_corr = BETA * ((vee - VBE) / ic_target - re)
+        if rb_corr <= 0:
+            return None
+        param_name, param_old, param_new = "Rb", rb, rb_corr
+        res_corr = calc_emisor(vcc, vee, rb_corr, rc, re)
+    return dict(param_name=param_name, param_old=param_old, param_new=param_new, res=res_corr)
+
+
+def correct_divisor(vcc, r1, r2, rc, re, res):
+    if res["estado"] == "activa":
+        return None
+    target_vce = vcc / 2
+    if res["estado"] == "saturacion":
+        ib = res["ib"]
+        ic_ideal = BETA * ib
+        if ic_ideal <= 0:
+            return None
+        rc_corr = target_vce / ic_ideal - re
+        if rc_corr <= 0:
+            return None
+        param_name, param_old, param_new = "Rc", rc, rc_corr
+        res_corr = calc_divisor(vcc, r1, r2, rc_corr, re)
+    else:  # corte (Vth insuficiente: se ajusta R2 para elevar Vth)
+        ic_target = target_vce / (rc + re)
+        ib_target = ic_target / BETA
+        rth = (r1 * r2) / (r1 + r2)
+        vth_target = ib_target * (rth + (BETA + 1) * re) + VBE
+        if vth_target <= 0 or vth_target >= vcc:
+            return None
+        r2_corr = (vth_target * r1) / (vcc - vth_target)
+        if r2_corr <= 0:
+            return None
+        param_name, param_old, param_new = "R2", r2, r2_corr
+        res_corr = calc_divisor(vcc, r1, r2_corr, rc, re)
+    return dict(param_name=param_name, param_old=param_old, param_new=param_new, res=res_corr)
+
+
+def fmt_ohm(value):
+    if value >= 1000:
+        return f"{value/1000:.2f} kΩ"
+    return f"{value:.1f} Ω"
+
+
+# ----------------------------------------------------------------------------
 # COMPONENTES DE INTERFAZ COMPARTIDOS
 # ----------------------------------------------------------------------------
 
@@ -489,10 +584,40 @@ def render_alert(estado, vcc_total):
         )
 
 
-def render_load_line(vce, ic, ib, vce_max, ic_sat):
+def render_correction(res_orig, corr):
+    """Muestra la sección 'Circuito Corregido' solo cuando hay una falla
+    (corte o saturación) y existe una corrección válida."""
+    if corr is None:
+        return
+    res_new = corr["res"]
+    st.markdown("#### 🛠️ Circuito Corregido")
+    st.caption(
+        f"Falla detectada → se ajustó **{corr['param_name']}** de "
+        f"{fmt_ohm(corr['param_old'])} a **{fmt_ohm(corr['param_new'])}** "
+        "para fijar Vce ≈ Vcc/2 y devolver el transistor a la Región Activa."
+    )
+    col_o, col_n = st.columns(2)
+    with col_o:
+        st.markdown("**Circuito original (con falla)**")
+        st.write(f"Ib = {res_orig['ib']*1e6:.2f} µA")
+        st.write(f"Ic = {res_orig['ic']*1000:.3f} mA")
+        st.write(f"Vce = {res_orig['vce']:.2f} V")
+        st.write(f"Estado: {res_orig['estado'].capitalize()}")
+    with col_n:
+        st.markdown("**Circuito corregido**")
+        st.write(f"Ib = {res_new['ib']*1e6:.2f} µA")
+        st.write(f"Ic = {res_new['ic']*1000:.3f} mA")
+        st.write(f"Vce = {res_new['vce']:.2f} V")
+        st.write(f"Estado: {res_new['estado'].capitalize()}")
+
+
+def render_load_line(vce, ic, ib, vce_max, ic_sat, corr=None):
     """
     Dibuja la familia de Curvas Características del Colector (Ic vs Vce para
     distintos valores de Ib), la Recta de Carga DC y el Punto Q de operación.
+    Si se entrega `corr` (resultado de una corrección de falla), también
+    dibuja la Recta de Carga y el Punto Q del circuito corregido, para poder
+    comparar el original vs el corregido en la misma gráfica.
     """
     fig = go.Figure()
 
@@ -524,22 +649,46 @@ def render_load_line(vce, ic, ib, vce_max, ic_sat):
             hoverinfo="skip" if not is_active_curve else "all",
         ))
 
-    # --- Recta de Carga DC ---
+    # --- Recta de Carga DC (circuito actual / original) ---
     fig.add_trace(go.Scatter(
         x=[0, vce_max], y=[ic_sat * 1000, 0],
-        mode="lines", name="Recta de Carga (DC)",
-        line=dict(color="#1f6feb", width=3),
+        mode="lines",
+        name="Recta de Carga (Original)" if corr is not None else "Recta de Carga (DC)",
+        line=dict(color="#1f6feb", width=3, dash="dash" if corr is not None else "solid"),
     ))
 
-    # --- Punto Q ---
+    # --- Punto Q (circuito actual / original) ---
     fig.add_trace(go.Scatter(
         x=[vce], y=[ic * 1000],
-        mode="markers+text", name="Punto Q",
+        mode="markers+text",
+        name="Q Original" if corr is not None else "Punto Q",
         marker=dict(color="#d62828", size=14, line=dict(width=2, color="#000000")),
         text=[f"Q ({vce:.2f} V, {ic*1000:.3f} mA)"],
         textposition="top center",
         textfont=dict(color="#000000"),
     ))
+
+    ic_sat_max = ic_sat
+    if corr is not None:
+        res_new = corr["res"]
+        ic_sat_max = max(ic_sat, res_new["ic_sat"])
+
+        # --- Recta de Carga DC (circuito corregido) ---
+        fig.add_trace(go.Scatter(
+            x=[0, vce_max], y=[res_new["ic_sat"] * 1000, 0],
+            mode="lines", name="Recta de Carga (Corregida)",
+            line=dict(color="#1a7f37", width=3),
+        ))
+
+        # --- Punto Q (circuito corregido) ---
+        fig.add_trace(go.Scatter(
+            x=[res_new["vce"]], y=[res_new["ic"] * 1000],
+            mode="markers+text", name="Q Corregido",
+            marker=dict(color="#f5a623", size=14, symbol="diamond", line=dict(width=2, color="#000000")),
+            text=[f"Q' ({res_new['vce']:.2f} V, {res_new['ic']*1000:.3f} mA)"],
+            textposition="bottom center",
+            textfont=dict(color="#000000"),
+        ))
 
     fig.update_layout(
         template="plotly_white",
@@ -547,7 +696,7 @@ def render_load_line(vce, ic, ib, vce_max, ic_sat):
         xaxis_title="Vce (V)",
         yaxis_title="Ic (mA)",
         xaxis=dict(range=[0, vce_max * 1.05], gridcolor="#d0d7de", color="#0d1117"),
-        yaxis=dict(range=[0, ic_sat * 1000 * 1.15], gridcolor="#d0d7de", color="#0d1117"),
+        yaxis=dict(range=[0, ic_sat_max * 1000 * 1.15], gridcolor="#d0d7de", color="#0d1117"),
         plot_bgcolor="#ffffff",
         paper_bgcolor="#ffffff",
         font=dict(color="#0d1117"),
@@ -637,10 +786,14 @@ with tab_a:
         st.markdown(f'<div class="beta-note">{BETA_NOTE}</div>', unsafe_allow_html=True)
 
     res_a = calc_base_fija(vcc_a, rb_a, rc_a)
+    corr_a = correct_base_fija(vcc_a, rb_a, rc_a, res_a)
+
+    with col_form:
+        render_correction(res_a, corr_a)
 
     with col_diag:
         render_results(res_a, vcc_a)
-        render_load_line(res_a["vce"], res_a["ic"], res_a["ib"], vcc_a, res_a["ic_sat"])
+        render_load_line(res_a["vce"], res_a["ic"], res_a["ib"], vcc_a, res_a["ic_sat"], corr=corr_a)
         render_alert(res_a["estado"], vcc_a)
 
 # ============================ OPCIÓN B ======================================
@@ -668,10 +821,14 @@ with tab_b:
         st.markdown(f'<div class="beta-note">{BETA_NOTE}</div>', unsafe_allow_html=True)
 
     res_b = calc_emisor(vcc_b, vee_b, rb_b, rc_b, re_b)
+    corr_b = correct_emisor(vcc_b, vee_b, rb_b, rc_b, re_b, res_b)
+
+    with col_form:
+        render_correction(res_b, corr_b)
 
     with col_diag:
         render_results(res_b, vcc_b + vee_b)
-        render_load_line(res_b["vce"], res_b["ic"], res_b["ib"], vcc_b + vee_b, res_b["ic_sat"])
+        render_load_line(res_b["vce"], res_b["ic"], res_b["ib"], vcc_b + vee_b, res_b["ic_sat"], corr=corr_b)
         render_alert(res_b["estado"], vcc_b + vee_b)
 
 # ============================ OPCIÓN C ======================================
@@ -698,11 +855,15 @@ with tab_c:
         st.markdown(f'<div class="beta-note">{BETA_NOTE}</div>', unsafe_allow_html=True)
 
     res_c = calc_divisor(vcc_c, r1_c, r2_c, rc_c, re_c)
+    corr_c = correct_divisor(vcc_c, r1_c, r2_c, rc_c, re_c, res_c)
+
+    with col_form:
+        render_correction(res_c, corr_c)
 
     with col_diag:
         render_results(res_c, vcc_c)
         st.caption(f"Vth = {res_c['vth']:.3f} V  |  Rth = {res_c['rth']:.1f} Ω (método de Thévenin)")
-        render_load_line(res_c["vce"], res_c["ic"], res_c["ib"], vcc_c, res_c["ic_sat"])
+        render_load_line(res_c["vce"], res_c["ic"], res_c["ib"], vcc_c, res_c["ic_sat"], corr=corr_c)
         render_alert(res_c["estado"], vcc_c)
 
 
