@@ -25,11 +25,31 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .stApp { background-color: #0e1117; }
-    .circuit-card {
-        background: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 12px;
+    .stApp {
+        background-color: #9ddb1a;
+        background-image:
+            radial-gradient(circle at 8% 15%, rgba(255,255,255,0.55) 0 22px, transparent 23px),
+            radial-gradient(circle at 32% 55%, rgba(255,255,255,0.55) 0 14px, transparent 15px),
+            radial-gradient(circle at 60% 20%, rgba(255,255,255,0.55) 0 28px, transparent 29px),
+            radial-gradient(circle at 85% 60%, rgba(255,255,255,0.55) 0 18px, transparent 19px),
+            radial-gradient(circle at 15% 85%, rgba(255,255,255,0.55) 0 24px, transparent 25px),
+            radial-gradient(circle at 48% 90%, rgba(255,255,255,0.55) 0 12px, transparent 13px),
+            radial-gradient(circle at 75% 90%, rgba(255,255,255,0.55) 0 20px, transparent 21px),
+            radial-gradient(circle at 92% 10%, rgba(255,255,255,0.55) 0 14px, transparent 15px);
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    .block-container {
+        background-color: rgba(13, 17, 23, 0.88);
+        border-radius: 18px;
+        padding: 2rem 2.5rem !important;
+        margin-top: 1rem;
+    }
+    .circuit-frame {
+        background: #ffffff;
+        border: 6px solid #000000;
+        border-radius: 14px;
         padding: 1rem;
     }
     .alert-ok {
@@ -68,146 +88,177 @@ BETA_NOTE = (
 # DIAGRAMAS SVG (estructura inspirada en las figuras del material académico)
 # ----------------------------------------------------------------------------
 
-def svg_base_fija():
-    return """
-    <svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+def svg_base_fija(vcc=None, rb=None, rc=None):
+    vcc_txt = f"{vcc:.1f} V" if vcc is not None else "Vcc"
+    rb_txt = f"{rb/1000:.0f} kΩ" if rb is not None else "Rb"
+    rc_txt = f"{rc/1000:.2f} kΩ" if rc is not None else "Rc"
+    return f"""
+    <svg viewBox="0 0 340 230" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
       <style>
-        .wire{stroke:#c9d1d9;stroke-width:2;fill:none;}
-        .lbl{fill:#8b949e;font-size:11px;font-family:monospace;}
-        .val{fill:#58a6ff;font-size:11px;font-family:monospace;font-weight:bold;}
+        .wire{{stroke:#000000;stroke-width:3;fill:none;}}
+        .lbl{{fill:#000000;font-size:12px;font-family:Arial, sans-serif;font-weight:700;}}
+        .val{{fill:#1a7f37;font-size:12px;font-family:Arial, sans-serif;font-weight:700;}}
       </style>
       <!-- Vcc fuente izquierda -->
       <line x1="40" y1="40" x2="40" y2="170" class="wire"/>
-      <line x1="30" y1="55" x2="50" y2="55" class="wire"/>
-      <line x1="34" y1="62" x2="46" y2="62" class="wire"/>
-      <text x="10" y="100" class="lbl">Vcc</text>
+      <line x1="28" y1="55" x2="52" y2="55" class="wire"/>
+      <line x1="33" y1="63" x2="47" y2="63" class="wire"/>
+      <text x="4" y="35" class="lbl">Vcc</text>
+      <text x="4" y="100" class="val">{vcc_txt}</text>
       <!-- Rb resistencia base -->
       <line x1="40" y1="40" x2="120" y2="40" class="wire"/>
-      <rect x="60" y="32" width="40" height="16" fill="none" stroke="#c9d1d9" stroke-width="2"/>
-      <text x="55" y="25" class="lbl">Rb</text>
+      <rect x="60" y="32" width="40" height="16" fill="none" stroke="#000000" stroke-width="3"/>
+      <text x="58" y="25" class="lbl">Rb</text>
+      <text x="55" y="64" class="val">{rb_txt}</text>
       <!-- linea base hacia transistor -->
       <line x1="120" y1="40" x2="160" y2="40" class="wire"/>
       <line x1="160" y1="40" x2="160" y2="90" class="wire"/>
       <!-- transistor circulo -->
-      <circle cx="190" cy="100" r="32" fill="none" stroke="#c9d1d9" stroke-width="2"/>
+      <circle cx="190" cy="100" r="32" fill="none" stroke="#000000" stroke-width="3"/>
       <line x1="160" y1="100" x2="180" y2="100" class="wire"/>
-      <line x1="180" y1="85" x2="180" y2="115" class="wire" stroke-width="3"/>
+      <line x1="180" y1="85" x2="180" y2="115" class="wire" stroke-width="4"/>
       <line x1="180" y1="90" x2="205" y2="70" class="wire"/>
       <line x1="180" y1="110" x2="205" y2="130" class="wire"/>
-      <text x="200" y="100" class="lbl">β=100</text>
+      <text x="222" y="104" class="lbl">β = 100</text>
       <!-- Colector arriba hacia Rc y Vcc derecha -->
       <line x1="205" y1="70" x2="205" y2="40" class="wire"/>
       <line x1="205" y1="40" x2="270" y2="40" class="wire"/>
-      <rect x="225" y="32" width="40" height="16" fill="none" stroke="#c9d1d9" stroke-width="2"/>
+      <rect x="225" y="32" width="40" height="16" fill="none" stroke="#000000" stroke-width="3"/>
       <text x="225" y="25" class="lbl">Rc</text>
       <line x1="270" y1="40" x2="270" y2="170" class="wire"/>
-      <line x1="260" y1="55" x2="280" y2="55" class="wire"/>
-      <line x1="264" y1="62" x2="276" y2="62" class="wire"/>
+      <line x1="258" y1="55" x2="282" y2="55" class="wire"/>
+      <line x1="263" y1="63" x2="277" y2="63" class="wire"/>
+      <text x="285" y="35" class="lbl">Vcc</text>
+      <text x="220" y="64" class="val">{rc_txt}</text>
       <!-- Emisor a tierra comun -->
       <line x1="205" y1="130" x2="205" y2="170" class="wire"/>
       <line x1="40" y1="170" x2="270" y2="170" class="wire"/>
       <line x1="150" y1="170" x2="150" y2="185" class="wire"/>
-      <line x1="135" y1="185" x2="165" y2="185" class="wire"/>
-      <line x1="141" y1="192" x2="159" y2="192" class="wire"/>
+      <line x1="133" y1="185" x2="167" y2="185" class="wire"/>
+      <line x1="140" y1="192" x2="160" y2="192" class="wire"/>
       <line x1="147" y1="199" x2="153" y2="199" class="wire"/>
     </svg>
     """
 
 
-def svg_emisor():
-    return """
-    <svg viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+def svg_emisor(vcc=None, vee=None, rb=None, rc=None, re=None):
+    vcc_txt = f"{vcc:.1f} V" if vcc is not None else "+Vcc"
+    vee_txt = f"{vee:.1f} V" if vee is not None else "-Vee"
+    rb_txt = f"{rb/1000:.1f} kΩ" if rb is not None else "Rb"
+    rc_txt = f"{rc/1000:.1f} kΩ" if rc is not None else "Rc"
+    re_txt = f"{re/1000:.1f} kΩ" if re is not None else "Re"
+    return f"""
+    <svg viewBox="0 0 360 250" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
       <style>
-        .wire{stroke:#c9d1d9;stroke-width:2;fill:none;}
-        .lbl{fill:#8b949e;font-size:11px;font-family:monospace;}
+        .wire{{stroke:#000000;stroke-width:3;fill:none;}}
+        .lbl{{fill:#000000;font-size:12px;font-family:Arial, sans-serif;font-weight:700;}}
+        .val{{fill:#1a7f37;font-size:12px;font-family:Arial, sans-serif;font-weight:700;}}
       </style>
       <!-- Rb desde nodo base a tierra/referencia -->
       <line x1="60" y1="40" x2="60" y2="80" class="wire"/>
-      <rect x="52" y="80" width="16" height="35" fill="none" stroke="#c9d1d9" stroke-width="2"/>
-      <text x="72" y="100" class="lbl">Rb</text>
+      <rect x="52" y="80" width="16" height="35" fill="none" stroke="#000000" stroke-width="3"/>
+      <text x="74" y="92" class="lbl">Rb</text>
+      <text x="74" y="106" class="val">{rb_txt}</text>
       <line x1="60" y1="115" x2="60" y2="200" class="wire"/>
       <!-- linea base hacia transistor -->
       <line x1="60" y1="40" x2="160" y2="40" class="wire"/>
       <line x1="160" y1="40" x2="160" y2="90" class="wire"/>
       <!-- transistor -->
-      <circle cx="190" cy="100" r="32" fill="none" stroke="#c9d1d9" stroke-width="2"/>
+      <circle cx="190" cy="100" r="32" fill="none" stroke="#000000" stroke-width="3"/>
       <line x1="160" y1="100" x2="180" y2="100" class="wire"/>
-      <line x1="180" y1="85" x2="180" y2="115" class="wire" stroke-width="3"/>
+      <line x1="180" y1="85" x2="180" y2="115" class="wire" stroke-width="4"/>
       <line x1="180" y1="90" x2="205" y2="70" class="wire"/>
       <line x1="180" y1="110" x2="205" y2="130" class="wire"/>
+      <text x="222" y="104" class="lbl">β = 100</text>
       <!-- Colector arriba hacia Rc y Vcc -->
       <line x1="205" y1="70" x2="205" y2="40" class="wire"/>
       <line x1="205" y1="40" x2="280" y2="40" class="wire"/>
-      <rect x="235" y="32" width="40" height="16" fill="none" stroke="#c9d1d9" stroke-width="2"/>
+      <rect x="235" y="32" width="40" height="16" fill="none" stroke="#000000" stroke-width="3"/>
       <text x="235" y="25" class="lbl">Rc</text>
+      <text x="230" y="64" class="val">{rc_txt}</text>
       <line x1="280" y1="40" x2="280" y2="100" class="wire"/>
-      <line x1="270" y1="55" x2="290" y2="55" class="wire"/>
-      <line x1="274" y1="62" x2="286" y2="62" class="wire"/>
-      <text x="295" y="60" class="lbl">+Vcc</text>
+      <line x1="268" y1="55" x2="292" y2="55" class="wire"/>
+      <line x1="273" y1="63" x2="287" y2="63" class="wire"/>
+      <text x="296" y="35" class="lbl">+Vcc</text>
+      <text x="296" y="64" class="val">{vcc_txt}</text>
       <!-- Emisor abajo hacia Re y Vee -->
       <line x1="205" y1="130" x2="205" y2="200" class="wire"/>
       <line x1="205" y1="200" x2="280" y2="200" class="wire"/>
-      <rect x="235" y="192" width="40" height="16" fill="none" stroke="#c9d1d9" stroke-width="2"/>
+      <rect x="235" y="192" width="40" height="16" fill="none" stroke="#000000" stroke-width="3"/>
       <text x="235" y="186" class="lbl">Re</text>
+      <text x="230" y="224" class="val">{re_txt}</text>
       <line x1="280" y1="200" x2="280" y2="140" class="wire"/>
-      <line x1="270" y1="155" x2="290" y2="155" class="wire"/>
-      <line x1="274" y1="162" x2="286" y2="162" class="wire"/>
-      <text x="295" y="160" class="lbl">-Vee</text>
+      <line x1="268" y1="155" x2="292" y2="155" class="wire"/>
+      <line x1="273" y1="163" x2="287" y2="163" class="wire"/>
+      <text x="296" y="160" class="lbl">-Vee</text>
+      <text x="296" y="178" class="val">{vee_txt}</text>
       <!-- Rb a Vee tambien -->
       <line x1="60" y1="200" x2="205" y2="200" class="wire"/>
     </svg>
     """
 
 
-def svg_divisor():
-    return """
-    <svg viewBox="0 0 340 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+def svg_divisor(vcc=None, r1=None, r2=None, rc=None, re=None):
+    vcc_txt = f"{vcc:.1f} V" if vcc is not None else "Vcc"
+    r1_txt = f"{r1/1000:.1f} kΩ" if r1 is not None else "R1"
+    r2_txt = f"{r2/1000:.1f} kΩ" if r2 is not None else "R2"
+    rc_txt = f"{rc/1000:.2f} kΩ" if rc is not None else "Rc"
+    re_txt = f"{re:.0f} Ω" if re is not None else "Re"
+    return f"""
+    <svg viewBox="0 0 360 270" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
       <style>
-        .wire{stroke:#c9d1d9;stroke-width:2;fill:none;}
-        .lbl{fill:#8b949e;font-size:11px;font-family:monospace;}
+        .wire{{stroke:#000000;stroke-width:3;fill:none;}}
+        .lbl{{fill:#000000;font-size:12px;font-family:Arial, sans-serif;font-weight:700;}}
+        .val{{fill:#1a7f37;font-size:12px;font-family:Arial, sans-serif;font-weight:700;}}
       </style>
       <!-- riel Vcc superior -->
       <line x1="60" y1="30" x2="260" y2="30" class="wire"/>
-      <circle cx="60" cy="30" r="3" fill="#58a6ff"/>
+      <circle cx="60" cy="30" r="3" fill="#000000"/>
       <text x="100" y="20" class="lbl">Vcc</text>
+      <text x="155" y="20" class="val">{vcc_txt}</text>
       <!-- R1 -->
       <line x1="60" y1="30" x2="60" y2="60" class="wire"/>
-      <rect x="52" y="60" width="16" height="35" fill="none" stroke="#c9d1d9" stroke-width="2"/>
-      <text x="72" y="80" class="lbl">R1</text>
+      <rect x="52" y="60" width="16" height="35" fill="none" stroke="#000000" stroke-width="3"/>
+      <text x="74" y="72" class="lbl">R1</text>
+      <text x="74" y="86" class="val">{r1_txt}</text>
       <line x1="60" y1="95" x2="60" y2="130" class="wire"/>
       <!-- base hacia transistor -->
       <line x1="60" y1="130" x2="160" y2="130" class="wire"/>
       <line x1="160" y1="130" x2="160" y2="135" class="wire"/>
       <!-- transistor -->
-      <circle cx="190" cy="140" r="32" fill="none" stroke="#c9d1d9" stroke-width="2"/>
+      <circle cx="190" cy="140" r="32" fill="none" stroke="#000000" stroke-width="3"/>
       <line x1="160" y1="140" x2="180" y2="140" class="wire"/>
-      <line x1="180" y1="125" x2="180" y2="155" class="wire" stroke-width="3"/>
+      <line x1="180" y1="125" x2="180" y2="155" class="wire" stroke-width="4"/>
       <line x1="180" y1="130" x2="205" y2="110" class="wire"/>
       <line x1="180" y1="150" x2="205" y2="170" class="wire"/>
+      <text x="222" y="144" class="lbl">β = 100</text>
       <!-- R2 desde nodo base a tierra -->
       <line x1="60" y1="130" x2="60" y2="160" class="wire"/>
-      <rect x="52" y="160" width="16" height="35" fill="none" stroke="#c9d1d9" stroke-width="2"/>
-      <text x="72" y="180" class="lbl">R2</text>
+      <rect x="52" y="160" width="16" height="35" fill="none" stroke="#000000" stroke-width="3"/>
+      <text x="74" y="172" class="lbl">R2</text>
+      <text x="74" y="186" class="val">{r2_txt}</text>
       <line x1="60" y1="195" x2="60" y2="230" class="wire"/>
       <!-- Rc -->
       <line x1="205" y1="110" x2="205" y2="30" class="wire"/>
       <line x1="205" y1="30" x2="260" y2="30" class="wire"/>
-      <rect x="222" y="60" width="16" height="35" fill="none" stroke="#c9d1d9" stroke-width="2"/>
-      <text x="240" y="80" class="lbl">Rc</text>
+      <rect x="222" y="60" width="16" height="35" fill="none" stroke="#000000" stroke-width="3"/>
+      <text x="244" y="72" class="lbl">Rc</text>
+      <text x="244" y="86" class="val">{rc_txt}</text>
       <line x1="230" y1="30" x2="230" y2="60" class="wire"/>
       <line x1="230" y1="95" x2="230" y2="110" class="wire"/>
       <line x1="205" y1="110" x2="230" y2="110" class="wire"/>
       <!-- Re hacia tierra -->
       <line x1="205" y1="170" x2="205" y2="195" class="wire"/>
-      <rect x="197" y="195" width="16" height="35" fill="none" stroke="#c9d1d9" stroke-width="2"/>
-      <text x="217" y="215" class="lbl">Re</text>
+      <rect x="197" y="195" width="16" height="35" fill="none" stroke="#000000" stroke-width="3"/>
+      <text x="219" y="207" class="lbl">Re</text>
+      <text x="219" y="221" class="val">{re_txt}</text>
       <line x1="205" y1="230" x2="205" y2="230" class="wire"/>
       <!-- tierra comun -->
       <line x1="60" y1="230" x2="205" y2="230" class="wire"/>
       <line x1="120" y1="230" x2="120" y2="240" class="wire"/>
-      <line x1="108" y1="240" x2="132" y2="240" class="wire"/>
-      <line x1="113" y1="246" x2="127" y2="246" class="wire"/>
-      <line x1="118" y1="252" x2="122" y2="252" class="wire"/>
+      <line x1="106" y1="240" x2="134" y2="240" class="wire"/>
+      <line x1="111" y1="247" x2="129" y2="247" class="wire"/>
+      <line x1="116" y1="254" x2="124" y2="254" class="wire"/>
     </svg>
     """
 
@@ -297,14 +348,15 @@ def render_load_line(vce, ic, ib, vce_max, ic_sat):
     # luego se mantiene "plana" (modelo ideal) en la región activa.
     ib_actual = max(ib, vce_max / 1e9)  # evita división por cero si ib=0
     ib_multipliers = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
-    vce_knee = vce_max * 0.04  # rodilla de saturación aproximada
+    tau = vce_max * 0.06  # controla qué tan "abierto" es el codo de la curva
 
+    n_points = 60
     for m in ib_multipliers:
         ib_curve = ib_actual * m
         ic_flat = min(BETA * ib_curve, ic_sat)
         is_active_curve = abs(m - 1.0) < 1e-6
-        x_vals = [0, vce_knee, vce_max]
-        y_vals = [0, ic_flat * 1000, ic_flat * 1000]
+        x_vals = [vce_max * i / (n_points - 1) for i in range(n_points)]
+        y_vals = [ic_flat * 1000 * (1 - 2.718281828 ** (-x / tau)) for x in x_vals]
         fig.add_trace(go.Scatter(
             x=x_vals, y=y_vals,
             mode="lines",
@@ -313,6 +365,7 @@ def render_load_line(vce, ic, ib, vce_max, ic_sat):
                 color="#3fb950" if is_active_curve else "#2c3a4a",
                 width=3 if is_active_curve else 1.5,
                 dash="solid" if is_active_curve else "dot",
+                shape="spline",
             ),
             showlegend=is_active_curve,
             hoverinfo="skip" if not is_active_curve else "all",
@@ -380,14 +433,14 @@ with tab_a:
 
     col_form, col_diag = st.columns([1, 1])
     with col_form:
-        st.markdown('<div class="circuit-card">', unsafe_allow_html=True)
-        st.markdown(svg_base_fija(), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="beta-note">{BETA_NOTE}</div>', unsafe_allow_html=True)
-
         vcc_a = st.slider("Vcc (V)", 0.0, 30.0, 10.0, 0.1, key="vcc_a")
         rb_a = st.number_input("Rb (Ω)", min_value=1.0, value=1_000_000.0, step=1000.0, key="rb_a")
         rc_a = st.number_input("Rc (Ω)", min_value=1.0, value=1000.0, step=10.0, key="rc_a")
+
+        st.markdown('<div class="circuit-frame">', unsafe_allow_html=True)
+        st.markdown(svg_base_fija(vcc_a, rb_a, rc_a), unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="beta-note">{BETA_NOTE}</div>', unsafe_allow_html=True)
 
     res_a = calc_base_fija(vcc_a, rb_a, rc_a)
 
@@ -408,16 +461,16 @@ with tab_b:
 
     col_form, col_diag = st.columns([1, 1])
     with col_form:
-        st.markdown('<div class="circuit-card">', unsafe_allow_html=True)
-        st.markdown(svg_emisor(), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="beta-note">{BETA_NOTE}</div>', unsafe_allow_html=True)
-
         vcc_b = st.slider("Vcc (V)", 0.0, 30.0, 20.0, 0.1, key="vcc_b")
         vee_b = st.slider("Vee (V)", 0.0, 30.0, 20.0, 0.1, key="vee_b")
         rb_b = st.number_input("Rb (Ω)", min_value=1.0, value=10_000.0, step=100.0, key="rb_b")
         rc_b = st.number_input("Rc (Ω)", min_value=1.0, value=5_000.0, step=100.0, key="rc_b")
         re_b = st.number_input("Re (Ω)", min_value=1.0, value=10_000.0, step=100.0, key="re_b")
+
+        st.markdown('<div class="circuit-frame">', unsafe_allow_html=True)
+        st.markdown(svg_emisor(vcc_b, vee_b, rb_b, rc_b, re_b), unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="beta-note">{BETA_NOTE}</div>', unsafe_allow_html=True)
 
     res_b = calc_emisor(vcc_b, vee_b, rb_b, rc_b, re_b)
 
@@ -437,16 +490,16 @@ with tab_c:
 
     col_form, col_diag = st.columns([1, 1])
     with col_form:
-        st.markdown('<div class="circuit-card">', unsafe_allow_html=True)
-        st.markdown(svg_divisor(), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="beta-note">{BETA_NOTE}</div>', unsafe_allow_html=True)
-
         vcc_c = st.slider("Vcc (V)", 0.0, 30.0, 10.0, 0.1, key="vcc_c")
         r1_c = st.number_input("R1 (Ω)", min_value=1.0, value=10_000.0, step=100.0, key="r1_c")
         r2_c = st.number_input("R2 (Ω)", min_value=1.0, value=5_000.0, step=100.0, key="r2_c")
         rc_c = st.number_input("Rc (Ω)", min_value=1.0, value=1_000.0, step=10.0, key="rc_c")
         re_c = st.number_input("Re (Ω)", min_value=1.0, value=500.0, step=10.0, key="re_c")
+
+        st.markdown('<div class="circuit-frame">', unsafe_allow_html=True)
+        st.markdown(svg_divisor(vcc_c, r1_c, r2_c, rc_c, re_c), unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="beta-note">{BETA_NOTE}</div>', unsafe_allow_html=True)
 
     res_c = calc_divisor(vcc_c, r1_c, r2_c, rc_c, re_c)
 
