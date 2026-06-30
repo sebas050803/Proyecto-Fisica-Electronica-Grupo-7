@@ -164,6 +164,49 @@ st.markdown(
     div[data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"] {
         background-color: rgba(0, 0, 0, 0.12);
     }
+
+    /* ---- Estilos exclusivos de la pestaña "Presentación" ---- */
+    .pres-board {
+        background: #0b3d2e;
+        border: 14px solid #c9b896;
+        border-radius: 6px;
+        padding: 2.2rem 2.6rem;
+        box-shadow: 0 10px 0 rgba(0,0,0,0.08);
+    }
+    .pres-board h3 {
+        color: #e8e042 !important;
+        font-weight: 800 !important;
+        margin-top: 0.6rem;
+        margin-bottom: 0.2rem;
+        font-size: 1.25rem;
+    }
+    .pres-board ul {
+        margin-top: 0.1rem;
+        margin-bottom: 0.4rem;
+        padding-left: 1.4rem;
+    }
+    .pres-board li {
+        color: #f5f5f0 !important;
+        font-size: 1.05rem;
+        margin-bottom: 0.15rem;
+    }
+    .pres-shield-wrap {
+        text-align: center;
+        padding-top: 1.5rem;
+    }
+    .pres-shield-caption {
+        text-align: center;
+        font-weight: 800 !important;
+        color: #0d1117 !important;
+        margin-top: 0.4rem;
+        font-size: 1.05rem;
+    }
+    .pres-shield-caption small {
+        display: block;
+        font-weight: 600 !important;
+        color: #3a3a3a !important;
+        font-size: 0.85rem;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -358,6 +401,44 @@ def svg_divisor(vcc=None, r1=None, r2=None, rc=None, re=None):
     """
 
 
+def svg_unmsm_shield():
+    """Escudo simplificado tipo San Marcos: óvalo dorado, banda azul, columnas y león."""
+    return """
+    <svg viewBox="0 0 220 260" xmlns="http://www.w3.org/2000/svg" style="width:170px;height:auto;">
+      <defs>
+        <radialGradient id="goldGrad" cx="50%" cy="35%" r="75%">
+          <stop offset="0%" stop-color="#ffe27a"/>
+          <stop offset="55%" stop-color="#e8b923"/>
+          <stop offset="100%" stop-color="#b8860b"/>
+        </radialGradient>
+      </defs>
+      <!-- corona / angel simplificado -->
+      <circle cx="110" cy="34" r="20" fill="#f3d27a" stroke="#7a5a10" stroke-width="2"/>
+      <path d="M70 40 Q110 10 150 40" fill="none" stroke="#b8860b" stroke-width="4"/>
+      <!-- óvalo dorado principal -->
+      <ellipse cx="110" cy="148" rx="92" ry="104" fill="url(#goldGrad)" stroke="#5c4209" stroke-width="5"/>
+      <ellipse cx="110" cy="148" rx="78" ry="90" fill="#ffffff" stroke="#b8860b" stroke-width="3"/>
+      <!-- banda celeste superior con estrellas -->
+      <path d="M40 95 Q110 70 180 95 L180 120 Q110 98 40 120 Z" fill="#7fb7e8" stroke="#1f6feb" stroke-width="2"/>
+      <circle cx="80" cy="100" r="3" fill="#ffffff"/>
+      <circle cx="110" cy="92" r="3" fill="#ffffff"/>
+      <circle cx="140" cy="100" r="3" fill="#ffffff"/>
+      <!-- columnas plateadas -->
+      <rect x="78" y="118" width="10" height="80" fill="#c9d3dc" stroke="#5c6b78" stroke-width="2"/>
+      <rect x="132" y="118" width="10" height="80" fill="#c9d3dc" stroke="#5c6b78" stroke-width="2"/>
+      <!-- mar azul -->
+      <path d="M55 195 Q110 215 165 195 L165 215 Q110 232 55 215 Z" fill="#1f6feb" stroke="#123a86" stroke-width="2"/>
+      <!-- leon dorado central -->
+      <ellipse cx="110" cy="165" rx="20" ry="14" fill="#caa43d" stroke="#5c4209" stroke-width="2"/>
+      <circle cx="110" cy="150" r="9" fill="#caa43d" stroke="#5c4209" stroke-width="2"/>
+      <!-- lima (fruta) abajo -->
+      <circle cx="110" cy="218" r="9" fill="#2ea043" stroke="#0f3320" stroke-width="2"/>
+      <!-- texto SM -->
+      <text x="110" y="78" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="13" fill="#5c4209">S.M.</text>
+    </svg>
+    """
+
+
 # ----------------------------------------------------------------------------
 # FUNCIONES DE CÁLCULO
 # ----------------------------------------------------------------------------
@@ -509,13 +590,14 @@ def render_results(res, vce_max):
 
 
 # ----------------------------------------------------------------------------
-# LAYOUT PRINCIPAL: 3 PESTAÑAS
+# LAYOUT PRINCIPAL: 4 PESTAÑAS (3 de polarización + Presentación)
 # ----------------------------------------------------------------------------
 
-tab_a, tab_b, tab_c = st.tabs([
+tab_a, tab_b, tab_c, tab_pres = st.tabs([
     "Polarización de Base (Fija)",
     "Polarización de Emisor",
     "Divisor de Tensión",
+    "Presentación",
 ])
 
 # ============================ OPCIÓN A ======================================
@@ -607,6 +689,43 @@ with tab_c:
         st.caption(f"Vth = {res_c['vth']:.3f} V  |  Rth = {res_c['rth']:.1f} Ω (método de Thévenin)")
         render_load_line(res_c["vce"], res_c["ic"], res_c["ib"], vcc_c, res_c["ic_sat"])
         render_alert(res_c["estado"], vcc_c)
+
+# ============================ PRESENTACIÓN ==================================
+with tab_pres:
+    col_board, col_shield = st.columns([1.6, 1])
+
+    with col_board:
+        st.markdown(
+            """
+            <div class="pres-board">
+                <h3>Facultad:</h3>
+                <ul><li>Ingeniería de Sistemas e Informática</li></ul>
+                <h3>Profesor:</h3>
+                <ul><li>Galarreta Díaz, Jose Hermenegildo</li></ul>
+                <h3>Asignatura:</h3>
+                <ul><li>Física Electrónica</li></ul>
+                <h3>Integrantes:</h3>
+                <ul>
+                    <li>Machaca Ponce, Sebastián Emanuel</li>
+                    <li>Huallpacuna Gutierrez, Jean Piero</li>
+                    <li>Tafur Coveñas, Angel Daniel</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col_shield:
+        st.markdown(
+            f"""
+            <div class="pres-shield-wrap">{svg_unmsm_shield()}</div>
+            <div class="pres-shield-caption">
+                UNIVERSIDAD NACIONAL MAYOR DE<br>SAN MARCOS
+                <small>Universidad del Perú, Decana de América</small>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 st.divider()
 st.caption(
