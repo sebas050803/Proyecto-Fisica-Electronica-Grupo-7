@@ -25,8 +25,14 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .stApp {
+    html, body, .stApp {
         background-color: #9ddb1a;
+    }
+    .stApp::before {
+        content: "";
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: -1;
         background-image:
             radial-gradient(circle at 8% 15%, rgba(255,255,255,0.55) 0 22px, transparent 23px),
             radial-gradient(circle at 32% 55%, rgba(255,255,255,0.55) 0 14px, transparent 15px),
@@ -37,8 +43,7 @@ st.markdown(
             radial-gradient(circle at 75% 90%, rgba(255,255,255,0.55) 0 20px, transparent 21px),
             radial-gradient(circle at 92% 10%, rgba(255,255,255,0.55) 0 14px, transparent 15px);
         background-repeat: no-repeat;
-        background-size: cover;
-        background-attachment: fixed;
+        background-size: 100% 100%;
     }
     .block-container {
         padding: 2rem 2.5rem !important;
@@ -47,12 +52,31 @@ st.markdown(
     .stApp, .stApp p, .stApp span, .stApp label, .stMarkdown, h1, h2, h3, h4 {
         color: #0d1117 !important;
     }
-    .circuit-frame, .chart-frame {
+    .circuit-frame {
         background: #ffffff;
         border: 6px solid #000000;
         border-radius: 14px;
         padding: 1rem;
         margin-bottom: 0.75rem;
+    }
+    .chart-frame {
+        background: #ffffff;
+        border: 6px solid #000000;
+        border-radius: 14px;
+        padding: 0.5rem;
+        margin-top: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+    div[data-testid="stPlotlyChart"] {
+        background: #ffffff;
+        border: 6px solid #000000;
+        border-radius: 14px;
+        padding: 0.75rem;
+    }
+    div[data-testid="stMetric"] {
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 0.4rem;
     }
     .alert-ok {
         background-color: #0f3320; border: 1px solid #2ea043;
@@ -77,7 +101,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("🔌 Laboratorio Virtual de Transistores BJT NPN de Silicio")
+st.title("🔌 Proyecto final de Física Electrónica")
 st.caption("Modelo de referencia: Transistor 2N3904 · Segunda aproximación (Vbe = 0.7 V)")
 
 BETA_NOTE = (
@@ -405,9 +429,7 @@ def render_load_line(vce, ic, ib, vce_max, ic_sat):
         height=420,
         legend=dict(orientation="h", y=-0.2, font=dict(color="#0d1117")),
     )
-    st.markdown('<div class="chart-frame">', unsafe_allow_html=True)
     st.plotly_chart(fig, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 
 def render_results(res, vce_max):
